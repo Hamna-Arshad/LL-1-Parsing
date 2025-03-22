@@ -19,7 +19,7 @@ bool HasNull(vector<vector<string>> rule);
 void RemoveNull(vector<vector<string>> *rule);
 unordered_map<string, vector<vector<string>>> Remove_Direct_LR(unordered_map<string, vector<vector<string>>> cfg, string lhs);
 unordered_map<string, vector<vector<string>>> Remove_LR(unordered_map<string, vector<vector<string>>> cfg);
-
+unordered_map<string, vector<vector<string>>> LR(unordered_map<string, vector<vector<string>>> cfg);
 
 /*
 2. Left Recursion Removal: Eliminate left recursion from the grammar to avoid infi-
@@ -33,7 +33,7 @@ A → βA′
 A′ → αA′ | ε
 */
 
-unordered_map<string, vector<vector<string>>> LR(unordered_map<string, vector<vector<string>>> cfg)
+unordered_map<string, vector<vector<string>>>LR(unordered_map<string, vector<vector<string>>> cfg)
 {
     //cout<<"HERE 1"<<endl;
     bool flag = false;
@@ -74,7 +74,7 @@ unordered_map<string, vector<vector<string>>> LR(unordered_map<string, vector<ve
             //cout<<"HERE 3"<<endl;
             for (auto &production : lhsRule.second)
             {
-                if (production[0] != lhsRule.first)
+                if (production[0] != lhsRule.first && production[0] != "null")
                 {
                     // cout<<production[0]<<endl;
                     for (int i = 0; i < production.size(); i++)
@@ -118,7 +118,7 @@ unordered_map<string, vector<vector<string>>> LR(unordered_map<string, vector<ve
     return cfg;
 }
 
-unordered_map<string, vector<vector<string>>> Remove_All_LR(unordered_map<string, vector<vector<string>>> cfg)
+unordered_map<string, vector<vector<string>>> Remove_LR(unordered_map<string, vector<vector<string>>> cfg)
 {
     // Get all non-terminals in a fixed order
     vector<string> nonTerminals;
@@ -240,10 +240,6 @@ unordered_map<string, vector<vector<string>>> Remove_Direct_LR(unordered_map<str
     return cfg;
 }
 
-unordered_map<string, vector<vector<string>>> Remove_LR(unordered_map<string, vector<vector<string>>> cfg)
-{
-    return Remove_All_LR(cfg);
-}
 
 void myPrintCFG(unordered_map<string, vector<vector<string>>> cfg)
 {
@@ -295,7 +291,7 @@ string GetValidNewRule(string lhsRule, unordered_map<string, vector<vector<strin
     // check if new rule already exists
     while (cfg.find(newRule) != cfg.end())
     {
-        newRule = lhsRule + "'" + "'";
+        newRule += "'";
     }
     return newRule;
 }

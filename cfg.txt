@@ -1,5 +1,6 @@
-E -> E + T | T
-T -> T * F | T + E | F
-E -> E + F | E
-T -> T * F | T F | null
-F -> ( E ) | id
+S -> a B D h
+B -> c C
+C -> b C | null
+D -> E F
+E -> g | null
+F -> f | null
