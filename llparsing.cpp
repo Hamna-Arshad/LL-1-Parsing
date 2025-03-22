@@ -32,10 +32,10 @@ int main() {
             cfg[nonterminal].push_back(rule);
         }
     }
+    unordered_map<string, vector<vector<string>>> left_factored_cfg = left_factor(cfg);
     
-    cout << endl << endl;
-    
-    for (auto it = cfg.begin(); it != cfg.end(); ++it) {
+    cout<<endl<<"Left Factored CFG: "<<endl<<endl;
+    for (auto it = left_factored_cfg.begin(); it != left_factored_cfg.end(); ++it) {
         cout << "Nonterminal: " << it->first << " ->";
         
         for (int i = 0; i < it->second.size(); i++) {
