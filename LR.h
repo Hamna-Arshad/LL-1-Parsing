@@ -6,18 +6,15 @@
 #include <iostream>
 #include <fstream>
 using namespace std;
-
-unordered_map<string, vector<vector<string>>> cfgg{
-    {"E", {{"E", "+", "T"}, {"T"}}},
-    {"T", {{"T", "*", "F"}, {"F"}}},
-    {"F", {{"(", "E", ")"}, {"id"}, {"F"}}}};
+#define VERBOSE1 0
+void myPrintCFG(unordered_map<string, vector<vector<string>>> cfg);
+void PrintAlpha(vector<vector<string>> alpha);
+void PrintBeta(vector<vector<string>> beta);
+string GetValidNewRule(string lhsRule, unordered_map<string, vector<vector<string>>> cfg);
+bool HasNull(vector<vector<string>> rule);
+void RemoveNull(vector<vector<string>> *rule);
 
 /*
-
-E -> E + T | T
-T -> T * F | F
-F -> ( E ) | id
-
 2. Left Recursion Removal: Eliminate left recursion from the grammar to avoid infi-
 nite recursion during top-down parsing. For a production of the form:
 
@@ -27,9 +24,90 @@ it should be rewritten as:
 
 A → βA′
 A′ → αA′ | ε
-
 */
-void PrintCFG(unordered_map<string, vector<vector<string>>> cfg)
+
+unordered_map<string, vector<vector<string>>> Remove_LR(unordered_map<string, vector<vector<string>>> cfg)
+{
+    bool flag = false;
+    vector<vector<string>> alpha;
+    vector<vector<string>> beta;
+    vector<string> temp;
+    // create new rule
+    string newRule;
+
+    for (auto &lhsRule : cfg)
+    {
+        for (auto &production : lhsRule.second)
+        {
+            newRule = GetValidNewRule(lhsRule.first, cfg);
+
+            // cout<<production[0]<<endl;
+            if (production[0] == lhsRule.first)
+            {
+                flag = true;
+                if (VERBOSE1)
+                    cout << "\n"
+                         << lhsRule.first << " has LR " << endl;
+                // find α and make a copy of it
+                for (int i = 1; i < production.size(); i++)
+                {
+                    temp.push_back(production[i]);
+                }
+                // add A' to α
+                temp.push_back(newRule);
+                // add to alpha
+                alpha.push_back(temp);
+                temp.clear();
+            }
+        }
+        // find β
+        if (flag)
+        {
+
+            for (auto &production : lhsRule.second)
+            {
+                if (production[0] != lhsRule.first)
+                {
+                    // cout<<production[0]<<endl;
+                    for (int i = 0; i < production.size(); i++)
+                    {
+                        temp.push_back(production[i]);
+                    }
+                    // add A' to β
+                    temp.push_back(newRule);
+                    beta.push_back(temp);
+                    temp.clear();
+                }
+            }
+            // add ε to alpha
+            // alpha.push_back({"ε"});
+            if (!HasNull(alpha))
+                alpha.push_back({"null"});
+
+            if (HasNull(beta))
+                RemoveNull(&beta);
+
+            flag = false;
+            // print alpha and beta
+            if (VERBOSE1)
+            {
+                PrintAlpha(alpha);
+                PrintBeta(beta);
+                cout << "New rule: " << newRule << endl;
+            }
+            // add new rule to cfg
+            cfg[newRule] = alpha;
+            cfg[lhsRule.first] = beta;
+            alpha.clear();
+            beta.clear();
+        }
+    }
+    if (VERBOSE1)
+        // print the new cfg
+        myPrintCFG(cfg);
+    return cfg;
+}
+void myPrintCFG(unordered_map<string, vector<vector<string>>> cfg)
 {
     cout << "cfg: " << endl;
     for (auto it = cfg.begin(); it != cfg.end(); ++it)
@@ -73,89 +151,37 @@ void PrintBeta(vector<vector<string>> beta)
         cout << " , ";
     }
 }
-void Remove_LR(unordered_map<string, vector<vector<string>>> cfg)
+
+string GetValidNewRule(string lhsRule, unordered_map<string, vector<vector<string>>> cfg)
 {
-    bool flag = false;
-    vector<vector<string>> alpha;
-    vector<vector<string>> beta;
-    vector<string> temp;
-    // create new rule
-    string newRule;
-
-    for (auto &lhsRule : cfg)
+    string newRule = lhsRule + "'";
+    // check if new rule already exists
+    while (cfg.find(newRule) != cfg.end())
     {
-        for (auto &production : lhsRule.second)
+        newRule = lhsRule + "'" + "'";
+    }
+    return newRule;
+}
+bool HasNull(vector<vector<string>> rule)
+{
+    for (auto &prod : rule)
+    {
+        if (prod[0] == "null")
         {
-            newRule = lhsRule.first + "'";
-            // cout<<production[0]<<endl;
-            if (production[0] == lhsRule.first)
-            {
-                flag = true;
-
-                cout << "\n"
-                     << lhsRule.first << " has LR " << endl;
-                // find α and make a copy of it
-                for (int i = 1; i < production.size(); i++)
-                {
-                    temp.push_back(production[i]);
-                }
-                // add A' to α
-                temp.push_back(newRule);
-                // add to alpha
-                alpha.push_back(temp);
-                temp.clear();
-            }
-        }
-        // find β
-        if (flag)
-        {
-
-            for (auto &production : lhsRule.second)
-            {
-                if (production[0] != lhsRule.first)
-                {
-                    // cout<<production[0]<<endl;
-                    for (int i = 0; i < production.size(); i++)
-                    {
-                        temp.push_back(production[i]);
-                    }
-                    beta.push_back(temp);
-                    temp.clear();
-                }
-            }
-            // add ε to alpha
-            alpha.push_back({"ε"});
-
-            flag = false;
-            // print alpha and beta
-            PrintAlpha(alpha);
-            PrintBeta(beta);
-
-            cout << "New rule: " << newRule << endl;
-            // add new rule to cfg
-            cfg[newRule] = alpha;
-            cfg[lhsRule.first] = beta;
-            alpha.clear();
-            beta.clear();
+            return true;
         }
     }
-    // print the new cfg
-    PrintCFG(cfg);
-}
 
-// E -> E + T | T
-/*
-#include "LR.h"
-unordered_map <string, vector<vector<string>>> cfg{
-    {"E", {{"E", "+", "T"}, {"T"}}},
-    {"T", {{"T", "*", "F"}, {"F"}}},
-    {"else", {{"T", "*", "F"}, {"else"}}},
-    {"F", {{"(", "E", ")"}, {"id"}, {"F"}}}
-};
-int main()
+    return false;
+}
+void RemoveNull(vector<vector<string>> *rule)
 {
-    Remove_LR(cfg);
+    for (auto &prod : *rule)
+    {
+        if (prod[0] == "null")
+        {
+            prod.erase(prod.begin());
+        }
+    }
 }
-
-*/
 #endif
