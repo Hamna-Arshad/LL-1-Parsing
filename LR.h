@@ -73,7 +73,7 @@ void PrintBeta(vector<vector<string>> beta)
         cout << " , ";
     }
 }
-void Remove_LR(unordered_map<string, vector<vector<string>>> cfg)
+unordered_map<string, vector<vector<string>>> Remove_LR(unordered_map<string, vector<vector<string>>> cfg)
 {
     bool flag = false;
     vector<vector<string>> alpha;
@@ -141,6 +141,7 @@ void Remove_LR(unordered_map<string, vector<vector<string>>> cfg)
     }
     // print the new cfg
     PrintCFG(cfg);
+    return cfg;
 }
 
 // E -> E + T | T
