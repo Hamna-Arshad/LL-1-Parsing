@@ -4,6 +4,10 @@
         "ostream": "cpp",
         "iostream": "cpp",
         "vector": "cpp",
-        "xstring": "cpp"
+        "xstring": "cpp",
+        "unordered_map": "cpp",
+        "iosfwd": "cpp",
+        "fstream": "cpp",
+        "string": "cpp"
     }
 }
