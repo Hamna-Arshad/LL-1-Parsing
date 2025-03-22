@@ -35,6 +35,7 @@ A′ → αA′ | ε
 
 unordered_map<string, vector<vector<string>>> LR(unordered_map<string, vector<vector<string>>> cfg)
 {
+    //cout<<"HERE 1"<<endl;
     bool flag = false;
     vector<vector<string>> alpha;
     vector<vector<string>> beta;
@@ -47,7 +48,7 @@ unordered_map<string, vector<vector<string>>> LR(unordered_map<string, vector<ve
         for (auto &production : lhsRule.second)
         {
             newRule = GetValidNewRule(lhsRule.first, cfg);
-
+            //cout<<"HERE 2"<<endl;
             // cout<<production[0]<<endl;
             if (production[0] == lhsRule.first)
             {
@@ -70,7 +71,7 @@ unordered_map<string, vector<vector<string>>> LR(unordered_map<string, vector<ve
         // find β
         if (flag)
         {
-
+            //cout<<"HERE 3"<<endl;
             for (auto &production : lhsRule.second)
             {
                 if (production[0] != lhsRule.first)
@@ -95,6 +96,7 @@ unordered_map<string, vector<vector<string>>> LR(unordered_map<string, vector<ve
                 RemoveNull(&beta);
 
             flag = false;
+            //cout<<"HERE 4"<<endl;
             // print alpha and beta
             if (VERBOSE1)
             {
@@ -109,6 +111,7 @@ unordered_map<string, vector<vector<string>>> LR(unordered_map<string, vector<ve
             beta.clear();
         }
     }
+    //cout<<"HERE 5"<<endl;
     if (VERBOSE1)
         // print the new cfg
         myPrintCFG(cfg);
@@ -167,7 +170,6 @@ unordered_map<string, vector<vector<string>>> Remove_All_LR(unordered_map<string
     return cfg;
 }
 
-// This function handles direct left recursion for a specific non-terminal
 unordered_map<string, vector<vector<string>>> Remove_Direct_LR(unordered_map<string, vector<vector<string>>> cfg, string lhs)
 {
     bool flag = false;
@@ -287,7 +289,6 @@ void PrintBeta(vector<vector<string>> beta)
         cout << " , ";
     }
 }
-
 string GetValidNewRule(string lhsRule, unordered_map<string, vector<vector<string>>> cfg)
 {
     string newRule = lhsRule + "'";
