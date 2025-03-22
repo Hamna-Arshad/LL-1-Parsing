@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <sstream>
 #include "LF.h"
+#include "LR.h"
 using namespace std;
 
 int main() {
@@ -47,6 +48,6 @@ int main() {
         }
         cout << endl;
     }
-    
+    Remove_LR(cfg);
     return 0;
 }
