@@ -48,6 +48,27 @@ int main() {
         }
         cout << endl;
     }
-    Remove_LR(cfg);
+    unordered_map<string, vector<vector<string>>> left_recursion_cfg =Remove_LR(left_factored_cfg);
+     unordered_map<string, vector<vector<string>>> first_list = first(left_factored_cfg);
+
+    for (auto it = first_list.begin(); it != first_list.end(); ++it)
+    {
+        cout << it->first << ":\t{ ";
+        for (int i = 0; i < it->second.size(); i++)
+        {
+            // Print each token in the i-th production
+            for (int j = 0; j < it->second[i].size(); j++)
+            {
+                cout << it->second[i][j];
+            }
+            // Print a production separator if it's not the last production
+            if (i < it->second.size() - 1)
+            {
+                cout << " , ";
+            }
+        }
+        cout << " }" << endl;
+    }
+    
     return 0;
 }
