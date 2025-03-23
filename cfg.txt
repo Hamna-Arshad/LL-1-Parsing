@@ -4,3 +4,5 @@ C -> b C | null
 D -> E F
 E -> g | null
 F -> f | null
+G -> G E | a
+H -> f C | H a B 

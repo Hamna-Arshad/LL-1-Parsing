@@ -15,8 +15,7 @@ using namespace std;
 void PrintCFG(unordered_map<string, vector<vector<string>>> cfg);
 unordered_map<string, vector<vector<string>>> ReadFile(string filename);
 void PrintFirstFollow(unordered_map<string, vector<vector<string>>> first_list);
-void printLL1Table(const unordered_map<string, unordered_map<string, vector<string>>> &parsingTable,
-    const set<string> &terminals);
+
 int main()
 {
 
@@ -33,7 +32,7 @@ int main()
 
     unordered_map<string, vector<vector<string>>> noRecursion_cfg = LR(left_factored_cfg);
     cout << "----------------------------------------" << endl;
-    cout << "No Left Recursion ";
+    cout << "Left Recursion Removed ";
     PrintCFG(noRecursion_cfg);
 
     unordered_map<string, vector<vector<string>>> first_list = first(noRecursion_cfg);
@@ -46,26 +45,10 @@ int main()
     cout << "Follow List \n";
     PrintFirstFollow(follow_sets);
 
-    unordered_map<string, unordered_map<string, vector<string>>> parsingTable = constructLL1Table(cfg, first_list, follow_sets);
     cout << "------------------------------------------------------" << endl;
     cout << "LL(1) Parsing Table \n";
-    set<string> terminals;
-    for (auto &rule : cfg)
-    {
-        for (auto &production : rule.second)
-        {
-            for (const string &symbol : production)
-            {
-                if (cfg.find(symbol) == cfg.end() && symbol != "ε")
-                {
-                    terminals.insert(symbol);
-                }
-            }
-        }
-    }
-    terminals.insert("$");
-    printLL1Table(parsingTable, terminals);
-
+    unordered_map<string, unordered_map<string, vector<string>>> parsingTable = constructLL1Table(cfg, first_list, follow_sets);
+    
     return 0;
 }
 
@@ -148,43 +131,4 @@ unordered_map<string, vector<vector<string>>> ReadFile(string filename)
     }
     file.close();
     return cfg;
-}
-void printLL1Table(const unordered_map<string, unordered_map<string, vector<string>>> &parsingTable,
-                   const set<string> &terminals)
-{
-
-    // Print column headers (terminals)
-    cout << setw(15) << " ";
-    for (const string &terminal : terminals)
-    {
-        cout << setw(15) << terminal;
-    }
-    cout << endl;
-
-    // Print rows (non-terminals and their productions)
-    for (const auto &row : parsingTable)
-    {
-        string nonTerminal = row.first;
-        cout << setw(15) << nonTerminal;
-
-        for (const string &terminal : terminals)
-        {
-            if (row.second.find(terminal) != row.second.end())
-            {
-                // Print the production
-                string production;
-                for (const string &symbol : row.second.at(terminal))
-                {
-                    production += symbol + " ";
-                }
-                cout << setw(15) << production;
-            }
-            else
-            {
-                // Print empty cell
-                cout << setw(15) << " ";
-            }
-        }
-        cout << endl;
-    }
 }
