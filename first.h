@@ -52,9 +52,9 @@ unordered_map<string, vector<vector<string>>> first(unordered_map<string, vector
                 // If this production has a non-terminal as its first symbol
                 if (prod.size() == 1 && non_terminals.find(prod[0]) != non_terminals.end()) {
                     bool added = false;
-                    
                     // Add all productions from the non-terminal's FIRST set
                     if (first_list.find(prod[0]) != first_list.end()) {
+                    
                         for (const auto& first_prod : first_list[prod[0]]) {
                             // Check if this production is already in new_productions
                             bool already_exists = false;
@@ -198,12 +198,21 @@ unordered_map<string, vector<vector<string>>> first(unordered_map<string, vector
                     } else {
                         // IMPORTANT: Remove null from new_productions if it exists
                         // and not all symbols can derive null
-                        for (auto it = new_productions.begin(); it != new_productions.end();) {
-                            if (it->size() == 1 && (*it)[0] == "null") {
-                                it = new_productions.erase(it);
-                                changed = true;
-                            } else {
-                                ++it;
+                        bool explicit_null = false;
+                        for (const auto &prod : cfg[non_terminal]) {
+                            if (prod.size() == 1 && prod[0] == "null") {
+                                explicit_null = true;
+                                break;
+                            }
+                        }
+                        if (!explicit_null) {
+                            for (auto it = new_productions.begin(); it != new_productions.end();) {
+                                if (it->size() == 1 && (*it)[0] == "null") {
+                                    it = new_productions.erase(it);
+                                    changed = true;
+                                } else {
+                                    ++it;
+                                }
                             }
                         }
                     }
