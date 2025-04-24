@@ -1,8 +1,8 @@
-S -> a B D h
-B -> c C
-C -> b C | null
-D -> E F
-E -> g | null
-F -> f | null
-G -> G E | a
-H -> f C | H a B 
+S → Declaration Assignment IfStatement
+Declaration → int Identifier ;
+Assignment → Identifier = Expression ;
+Expression → Number + Number | Identifier - Number
+IfStatement → if ( Condition ) { Assignment }
+Condition → Identifier > Number
+Identifier → x
+Number → 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
