@@ -16,6 +16,7 @@ using namespace std;
 void PrintCFG(unordered_map<string, vector<vector<string>>> cfg);
 unordered_map<string, vector<vector<string>>> ReadFile(string filename);
 void PrintFirstFollow(unordered_map<string, vector<vector<string>>> first_list);
+void parseInputStringUsingStack(const string &input, const unordered_map<string, unordered_map<string, vector<string>>> &parsingTable, const string &startSymbol);
 string readInputString(string filename)
 {
     ifstream file(filename);
@@ -28,252 +29,213 @@ string readInputString(string filename)
     buffer << file.rdbuf();
     return buffer.str();
 }
-/*
-void parseInput(const string &input_string,
-                const unordered_map<string, unordered_map<string, vector<string>>> &parsingTable,
-                const string &startSymbol)
+void parseInputStringUsingStack2(const string &input,
+                                const unordered_map<string, unordered_map<string, vector<string>>> &parsingTable,
+                                const string &startSymbol)
 {
     cout << "\n======== PARSING INPUT ========\n";
-    cout << "Input: " << input_string << endl;
+    cout << "Input: " << input << endl;
 
-    // Tokenize the input string
+    // Split input string into tokens (space-separated)
     vector<string> tokens;
-    stringstream ss(input_string);
+    stringstream ss(input);
     string token;
-
-    while (getline(ss, token, ' '))
+    while (ss >> token)
     {
-        // Skip empty tokens
-        if (!token.empty())
-        {
-            tokens.push_back(token);
-        }
+        tokens.push_back(token);
     }
     tokens.push_back("$"); // Add end marker
 
     // Initialize parsing stack
     stack<string> parseStack;
-    parseStack.push("$");         // End marker at the bottom
-    parseStack.push(startSymbol); // Start symbol
+    parseStack.push("$");
+    parseStack.push(startSymbol);
 
-    // Initialize current token index
-    size_t currentIndex = 0;
-
-    // Variables for error tracking
+    // Track errors and recovery
     int errorCount = 0;
     vector<string> errorMessages;
+    bool recoveredFromError = false;
+
+    // Current token position
+    size_t currentIndex = 0;
 
     cout << "\n--- Parsing Steps ---\n";
-    cout << left << setw(30) << "Stack" << setw(15) << "Input" << "Action" << endl;
-    cout << string(70, '-') << endl;
+    cout << left << setw(30) << "Stack" << setw(30) << "Remaining Input" << setw(30) << "Action" << endl;
+    cout << string(90, '-') << endl;
 
-    // Continue parsing until stack is empty or all tokens are consumed
     while (!parseStack.empty() && currentIndex <= tokens.size())
     {
-        // Print current stack contents
-        string stackContents = "";
-        stack<string> tempStack = parseStack;
-        vector<string> stackItems;
-
-        while (!tempStack.empty())
-        {
-            stackItems.push_back(tempStack.top());
-            tempStack.pop();
-        }
-
-        reverse(stackItems.begin(), stackItems.end());
-        for (const auto &item : stackItems)
-        {
-            stackContents += item + " ";
-        }
-
-        // Get current input token
         string currentToken = (currentIndex < tokens.size()) ? tokens[currentIndex] : "$";
-
-        cout << left << setw(30) << stackContents << setw(15) << currentToken;
-
-        // Get top of stack
         string topOfStack = parseStack.top();
 
-        // Case 1: Top of stack is $ and current token is $ -> Parsing completed successfully
+        // Display current state
+        string stackStr = "";
+        stack<string> tempStack = parseStack;
+        vector<string> stackContents;
+        while (!tempStack.empty())
+        {
+            stackContents.push_back(tempStack.top());
+            tempStack.pop();
+        }
+        for (auto it = stackContents.rbegin(); it != stackContents.rend(); ++it)
+        {
+            stackStr += *it + " ";
+        }
+
+        string remainingInput = "";
+        for (size_t i = currentIndex; i < tokens.size(); i++)
+        {
+            remainingInput += tokens[i] + " ";
+        }
+
+        cout << left << setw(30) << stackStr << setw(30) << remainingInput;
+
+        // Case 1: Successful parse completion
         if (topOfStack == "$" && currentToken == "$")
         {
-            cout << "Accept" << endl;
+            cout << "Accept - Parsing Complete" << endl;
             break;
         }
 
-        // Case 2: Top of stack is terminal
-        bool isTerminal = true;
-        for (const auto &pair : parsingTable)
+        // Case 2: Terminal at stack top (not in parsing table)
+        if (parsingTable.find(topOfStack) == parsingTable.end())
         {
-            if (pair.first == topOfStack)
-            {
-                isTerminal = false;
-                break;
-            }
-        }
-
-        if (isTerminal)
-        {
-            // If terminal matches current token
             if (topOfStack == currentToken)
             {
-                cout << "Match: " << topOfStack << endl;
+                cout << "Match: '" << topOfStack << "'" << endl;
                 parseStack.pop();
                 currentIndex++;
+                recoveredFromError = false;
             }
             else
             {
-                // Error: Terminal mismatch
-                string errorMsg = "Syntax Error: Expected '" + topOfStack + "' but found '" + currentToken + "'";
+                // Terminal mismatch - syntax error
+                string errorMsg = "Error: Expected '" + topOfStack + "', found '" + currentToken + "'";
                 cout << errorMsg << endl;
                 errorMessages.push_back(errorMsg);
                 errorCount++;
 
-                // Error recovery: Skip current token
+                // Error recovery strategy: Skip the current token
+                cout << left << setw(30) << "" << setw(30) << "" << "Recovery: Skip token '" << currentToken << "'" << endl;
                 currentIndex++;
+                recoveredFromError = true;
             }
             continue;
         }
 
-        // Case 3: Top of stack is non-terminal
-        // Check if there's an entry in parsing table
-        if (parsingTable.find(topOfStack) != parsingTable.end() &&
-            parsingTable.at(topOfStack).find(currentToken) != parsingTable.at(topOfStack).end())
+        // Case 3: Non-terminal at stack top (in parsing table)
+        auto nonTerminalEntry = parsingTable.find(topOfStack);
+        auto productionEntry = nonTerminalEntry != parsingTable.end() ? nonTerminalEntry->second.find(currentToken) : nonTerminalEntry->second.end();
+
+        if (nonTerminalEntry != parsingTable.end() && productionEntry != nonTerminalEntry->second.end())
         {
-
-            // Get production rule
-            vector<string> production = parsingTable.at(topOfStack).at(currentToken);
-
-            // Remove the non-terminal from stack
+            // Production found in the parsing table
+            vector<string> production = productionEntry->second;
             parseStack.pop();
 
-            // Push production in reverse order onto the stack
-            string actionStr = "Expand: " + topOfStack + " -> ";
-            for (auto it = production.rbegin(); it != production.rend(); ++it)
+            string productionStr = "";
+            for (const auto &sym : production)
             {
-                if (*it != "epsilon")
+                productionStr += sym + " ";
+            }
+
+            cout << "Expand: " << topOfStack << " -> " << productionStr << endl;
+
+            // Push production in reverse order (except epsilon)
+            if (!(production.size() == 1 && (production[0] == "epsilon" || production[0] == "ε")))
+            {
+                for (auto it = production.rbegin(); it != production.rend(); ++it)
                 {
                     parseStack.push(*it);
-                    actionStr += *it + " ";
-                }
-                else
-                {
-                    actionStr += "ε ";
                 }
             }
-            cout << actionStr << endl;
+            recoveredFromError = false;
         }
         else
         {
-            // Error: No production rule found
-            string errorMsg = "Syntax Error: No production rule for " + topOfStack + " with token " + currentToken;
+            // No production found - syntax error
+            string errorMsg = "Error: No production for " + topOfStack + " on input '" + currentToken + "'";
             cout << errorMsg << endl;
             errorMessages.push_back(errorMsg);
             errorCount++;
 
-            // Error recovery: Pop the non-terminal and continue
+            // Error recovery strategy: Pop the non-terminal and try to continue
+            cout << left << setw(30) << "" << setw(30) << "" << "Recovery: Skip non-terminal '" << topOfStack << "'" << endl;
             parseStack.pop();
+
+            // Simple error recovery strategy: skip the current token if it doesn't match any expected production
+            cout << left << setw(30) << "" << setw(30) << "" << "Synchronizing: Skipping token '" << currentToken << "'" << endl;
+            currentIndex++;
+
+            recoveredFromError = true;
         }
     }
 
-    cout << "\n--- Parsing Summary ---\n";
+    // Print final results
+    cout << "\n======== PARSING RESULT ========\n";
     if (errorCount == 0)
     {
-        cout << "Parsing completed successfully!" << endl;
+        cout << "Parsing completed successfully with no errors!" << endl;
     }
     else
     {
-        cout << "Parsing completed with " << errorCount << " errors." << endl;
-        cout << "\nError Details:\n";
-        for (size_t i = 0; i < errorMessages.size(); i++)
+        cout << "Parsing completed with " << errorCount << " error(s):" << endl;
+        for (size_t i = 0; i < errorMessages.size(); ++i)
         {
-            cout << i + 1 << ". " << errorMessages[i] << endl;
+            cout << (i + 1) << ". " << errorMessages[i] << endl;
         }
+        cout << "\nParsing status: " << (recoveredFromError ? "Failed" : "Partially successful with recovery") << endl;
     }
+
+    cout << "==============================\n";
+}
+int main()
+{
+
+    string filename = "cfg.txt";
+    unordered_map<string, vector<vector<string>>> cfg = ReadFile(filename);
+    cout << "----------------------------------------" << endl;
+    cout << "Original ";
+    PrintCFG(cfg);
+
+    unordered_map<string, vector<vector<string>>> left_factored_cfg = left_factor(cfg);
+    cout << "----------------------------------------" << endl;
+    cout << "Left Factored ";
+    PrintCFG(left_factored_cfg);
+
+    unordered_map<string, vector<vector<string>>> noRecursion_cfg = LR(left_factored_cfg);
+    cout << "----------------------------------------" << endl;
+    cout << "Left Recursion Removed ";
+    PrintCFG(noRecursion_cfg);
+
+    unordered_map<string, vector<vector<string>>> first_list = first(noRecursion_cfg);
+    cout << "----------------------------------------" << endl;
+    cout << "First List \n";
+    PrintFirstFollow(first_list);
+
+    unordered_map<string, vector<vector<string>>> follow_sets = follow(noRecursion_cfg, first_list);
+    cout << "----------------------------------------" << endl;
+    cout << "Follow List \n";
+    PrintFirstFollow(follow_sets);
+
+    cout << "------------------------------------------------------" << endl;
+    cout << "LL(1) Parsing Table \n";
+    unordered_map<string, unordered_map<string, vector<string>>> parsingTable = constructLL1Table(cfg, first_list, follow_sets);
+
+    cout << "\n";
+
+    cout << "------------------------------------------------------" << endl;
+    cout << "Parsing Table \n";
+    string inputFile = "input.txt";
+    string inputStr = readInputString(inputFile);
+    parseInputStringUsingStack2(inputStr, parsingTable, "S");
+    cout << "------------------------------------------------------" << endl;
+    return 0;
 }
 
-// Function to parse a file containing input strings
-void parseInputFile(const string &filename,
-                    const unordered_map<string, unordered_map<string, vector<string>>> &parsingTable,
-                    const string &startSymbol)
-{
-    ifstream file(filename);
-    if (!file.is_open())
-    {
-        cout << "Error opening file: " << filename << endl;
-        return;
-    }
-
-    string line;
-    int lineNumber = 1;
-
-    cout << "\n====== PARSING FILE: " << filename << " ======\n";
-
-    while (getline(file, line))
-    {
-        cout << "\n\n===== LINE " << lineNumber << " =====\n";
-        parseInput(line, parsingTable, startSymbol);
-        lineNumber++;
-    }
-
-    file.close();
-}
-
-// Function to parse input from the example you provided
-void parseExampleInput(const unordered_map<string, unordered_map<string, vector<string>>> &parsingTable)
-{
-    string input = "int x;\nx = 5 + ;\nif (x > 0{\nx = x - 1;\n}";
-
-    // Split into lines to process
-    stringstream ss(input);
-    string line;
-    int lineNumber = 1;
-    vector<string> errors;
-
-    cout << "\n====== PARSING EXAMPLE INPUT ======\n";
-
-    while (getline(ss, line))
-    {
-        cout << "Line " << lineNumber << ": " << line << endl;
-
-        // Process each line with the parser
-        // This is a simplified version for the example - you'd need to adapt this
-        // to work with your specific grammar and token handling
-
-        // Here we're just demonstrating error detection for the specific example
-        if (lineNumber == 2 && line.find("x = 5 + ;") != string::npos)
-        {
-            errors.push_back("Line 2: Syntax Error: Unexpected token ';' after '+'");
-        }
-        if (lineNumber == 3 && line.find("if (x > 0{") != string::npos)
-        {
-            errors.push_back("Line 3: Syntax Error: Expected ')' before '{'");
-        }
-
-        lineNumber++;
-    }
-
-    // Print errors
-    for (const auto &error : errors)
-    {
-        cout << error << endl;
-    }
-
-    if (errors.size() > 0)
-    {
-        cout << "Parsing continued after error recovery." << endl;
-        cout << "Parsing completed with " << errors.size() << " errors." << endl;
-    }
-    else
-    {
-        cout << "Parsing completed successfully!" << endl;
-    }
-}*/
-
-void parseInputString(const string &input,
-                      const unordered_map<string, unordered_map<string, vector<string>>> &parsingTable,
-                      const string &startSymbol)
+void parseInputStringUsingStack(const string &input,
+                                const unordered_map<string, unordered_map<string, vector<string>>> &parsingTable,
+                                const string &startSymbol)
 {
     cout << "\n======== PARSING INPUT ========\n";
     cout << "Input: " << input << endl;
@@ -409,52 +371,6 @@ void parseInputString(const string &input,
         }
     }
 }
-
-int main()
-{
-
-    string filename = "cfg.txt";
-    unordered_map<string, vector<vector<string>>> cfg = ReadFile(filename);
-    cout << "----------------------------------------" << endl;
-    cout << "Original ";
-    PrintCFG(cfg);
-
-    unordered_map<string, vector<vector<string>>> left_factored_cfg = left_factor(cfg);
-    cout << "----------------------------------------" << endl;
-    cout << "Left Factored ";
-    PrintCFG(left_factored_cfg);
-
-    unordered_map<string, vector<vector<string>>> noRecursion_cfg = LR(left_factored_cfg);
-    cout << "----------------------------------------" << endl;
-    cout << "Left Recursion Removed ";
-    PrintCFG(noRecursion_cfg);
-
-    unordered_map<string, vector<vector<string>>> first_list = first(noRecursion_cfg);
-    cout << "----------------------------------------" << endl;
-    cout << "First List \n";
-    PrintFirstFollow(first_list);
-
-    unordered_map<string, vector<vector<string>>> follow_sets = follow(noRecursion_cfg, first_list);
-    cout << "----------------------------------------" << endl;
-    cout << "Follow List \n";
-    PrintFirstFollow(follow_sets);
-
-    cout << "------------------------------------------------------" << endl;
-    cout << "LL(1) Parsing Table \n";
-    unordered_map<string, unordered_map<string, vector<string>>> parsingTable = constructLL1Table(cfg, first_list, follow_sets);
-
-    cout << "\n";
-
-    string inputFile = "input.txt";
-    string inputStr = readInputString(inputFile);
-    // parseInputFile(inputFile, parsingTable, "S"); // Assuming "S" is your start symbol
-    parseInputString(inputStr, parsingTable, "S");
-
-    // For the specific example in your assignment
-    // parseExampleInput(parsingTable);
-    return 0;
-}
-
 void PrintFirstFollow(unordered_map<string, vector<vector<string>>> first_list)
 {
     for (auto it = first_list.begin(); it != first_list.end(); ++it)
