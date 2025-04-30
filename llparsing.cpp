@@ -30,11 +30,10 @@ string readInputString(string filename)
     return buffer.str();
 }
 void parseInputStringUsingStack2(const string &input,
-                                const unordered_map<string, unordered_map<string, vector<string>>> &parsingTable,
-                                const string &startSymbol)
+                                 const unordered_map<string, unordered_map<string, vector<string>>> &parsingTable,
+                                 const string &startSymbol)
 {
-    cout << "\n======== PARSING INPUT ========\n";
-    cout << "Input: " << input << endl;
+    cout << "Input\n " << input << endl;
 
     // Split input string into tokens (space-separated)
     vector<string> tokens;
@@ -42,24 +41,46 @@ void parseInputStringUsingStack2(const string &input,
     string token;
     while (ss >> token)
     {
-        tokens.push_back(token);
+        if (token.length() > 1 &&
+            (token.find(';') != string::npos ||
+             token.find('=') != string::npos ||
+             token.find('+') != string::npos ||
+             token.find('-') != string::npos ||
+             token.find('>') != string::npos ||
+             token.find('(') != string::npos ||
+             token.find(')') != string::npos ||
+             token.find('{') != string::npos ||
+             token.find('}') != string::npos))
+        {
+            for (char c : token)
+            {
+                if (c == ';' || c == '=' || c == '+' || c == '-' || c == '>' ||
+                    c == '(' || c == ')' || c == '{' || c == '}')
+                {
+                    tokens.push_back(string(1, c));
+                }
+                else
+                {
+                    tokens.push_back(string(1, c));
+                }
+            }
+        }
+        else
+        {
+            tokens.push_back(token);
+        }
     }
-    tokens.push_back("$"); // Add end marker
-
-    // Initialize parsing stack
+    tokens.push_back("$"); 
     stack<string> parseStack;
     parseStack.push("$");
     parseStack.push(startSymbol);
 
-    // Track errors and recovery
     int errorCount = 0;
     vector<string> errorMessages;
     bool recoveredFromError = false;
 
-    // Current token position
     size_t currentIndex = 0;
 
-    cout << "\n--- Parsing Steps ---\n";
     cout << left << setw(30) << "Stack" << setw(30) << "Remaining Input" << setw(30) << "Action" << endl;
     cout << string(90, '-') << endl;
 
@@ -68,7 +89,6 @@ void parseInputStringUsingStack2(const string &input,
         string currentToken = (currentIndex < tokens.size()) ? tokens[currentIndex] : "$";
         string topOfStack = parseStack.top();
 
-        // Display current state
         string stackStr = "";
         stack<string> tempStack = parseStack;
         vector<string> stackContents;
@@ -90,14 +110,13 @@ void parseInputStringUsingStack2(const string &input,
 
         cout << left << setw(30) << stackStr << setw(30) << remainingInput;
 
-        // Case 1: Successful parse completion
         if (topOfStack == "$" && currentToken == "$")
         {
-            cout << "Accept - Parsing Complete" << endl;
+            cout << "Parsing Complete" << endl;
             break;
         }
 
-        // Case 2: Terminal at stack top (not in parsing table)
+        // Case 2: Terminal at stack top 
         if (parsingTable.find(topOfStack) == parsingTable.end())
         {
             if (topOfStack == currentToken)
@@ -109,13 +128,13 @@ void parseInputStringUsingStack2(const string &input,
             }
             else
             {
-                // Terminal mismatch - syntax error
+                // Terminal mismatc
                 string errorMsg = "Error: Expected '" + topOfStack + "', found '" + currentToken + "'";
                 cout << errorMsg << endl;
                 errorMessages.push_back(errorMsg);
                 errorCount++;
 
-                // Error recovery strategy: Skip the current token
+                // Error recovery strategy
                 cout << left << setw(30) << "" << setw(30) << "" << "Recovery: Skip token '" << currentToken << "'" << endl;
                 currentIndex++;
                 recoveredFromError = true;
@@ -123,7 +142,7 @@ void parseInputStringUsingStack2(const string &input,
             continue;
         }
 
-        // Case 3: Non-terminal at stack top (in parsing table)
+        // Case 3: Non-terminal at stack top 
         auto nonTerminalEntry = parsingTable.find(topOfStack);
         auto productionEntry = nonTerminalEntry != parsingTable.end() ? nonTerminalEntry->second.find(currentToken) : nonTerminalEntry->second.end();
 
@@ -159,23 +178,21 @@ void parseInputStringUsingStack2(const string &input,
             errorMessages.push_back(errorMsg);
             errorCount++;
 
-            // Error recovery strategy: Pop the non-terminal and try to continue
+            // Error recovery strategy: Skip non-terminal but don't skip the token
             cout << left << setw(30) << "" << setw(30) << "" << "Recovery: Skip non-terminal '" << topOfStack << "'" << endl;
             parseStack.pop();
 
-            // Simple error recovery strategy: skip the current token if it doesn't match any expected production
-            cout << left << setw(30) << "" << setw(30) << "" << "Synchronizing: Skipping token '" << currentToken << "'" << endl;
-            currentIndex++;
-
+            // Don't skip the token here since we're trying different stack symbol now
             recoveredFromError = true;
         }
     }
 
     // Print final results
-    cout << "\n======== PARSING RESULT ========\n";
+    cout << "------------------------------------------------------" << endl;
+    cout << "\nErrors\n";
     if (errorCount == 0)
     {
-        cout << "Parsing completed successfully with no errors!" << endl;
+        cout << "Parsing completed successfully with no errors" << endl;
     }
     else
     {
@@ -187,7 +204,6 @@ void parseInputStringUsingStack2(const string &input,
         cout << "\nParsing status: " << (recoveredFromError ? "Failed" : "Partially successful with recovery") << endl;
     }
 
-    cout << "==============================\n";
 }
 int main()
 {
@@ -237,7 +253,7 @@ void parseInputStringUsingStack(const string &input,
                                 const unordered_map<string, unordered_map<string, vector<string>>> &parsingTable,
                                 const string &startSymbol)
 {
-    cout << "\n======== PARSING INPUT ========\n";
+    
     cout << "Input: " << input << endl;
 
     // Split input string into tokens (space-separated)
